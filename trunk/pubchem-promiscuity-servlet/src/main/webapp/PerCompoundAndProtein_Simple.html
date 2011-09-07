@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link href="/template/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+        <link rel="shortcut icon" href="images/favicon.ico" />
+        
+        <script type="text/javascript">var isomorphicDir = "smartclient_8.1/isomorphic/"</script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Core.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Foundation.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Containers.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Grids.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Forms.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_DataBinding.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/skins/Enterprise/load_skin.js"></script>
+        <script type="text/javascript" src="javascript/utils.js"></script>
+        
+        <title>Per Compound And Protein - PubChem Promiscuity</title>
+        
+        <script type="text/javascript">
+
+  			var _gaq = _gaq || [];
+  			_gaq.push(['_setAccount', 'UA-4732091-4']);
+  			_gaq.push(['_trackPageview']);
+
+  			(function() {
+    			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  			})();
+
+		</script>   
+    </head>
+        
+    <body>
+    <div><a href="index.html"><img border=0 src="images/PCPromiscuity.png"></img></a></div>
+        <script type="text/javascript">
+            var pubchemCidUrl = "http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?cid=";
+            var pubchemSidUrl = "http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?sid=";
+            function getListGridFields(){
+            	var serviceUrl = "http://pubchem.ncbi.nlm.nih.gov/image/imagefly.cgi";
+                var gridFields = [ 
+                {
+                    name: "viewStructure", title: "View", type: "link", width: 40, align: "center", showHover:true, canFilter:false, canSort:false, canGroupBy: false
+                    ,prompt: "Hover on icon to view structure"
+                    ,formatCellValue: function(value, record, rowNum, colNum, grid ){
+                        if(rowNum != null && rowNum > 0)
+                            return Canvas.imgHTML({src: "actions/view.png"});
+                    }
+                    ,hoverHTML: function(record){
+                        if(record != null)
+                            return getImgHTML( serviceUrl, record.CID, 240, 240);
+                    }
+                },
+                {
+                    name: "CID", title: "CID", valueXPath:"../../CID", type: "integer", formatCellValue: "getPubchemUrl(pubchemCidUrl, value)", showHover:true
+                    ,prompt: "Pubchem CID"
+                    ,hoverHTML: function(record){
+                        return "Click link to navigate to Pubchem CID summary page"
+                    }
+                },
+                {name: "SID", title: "SID", valueXPath:"../../SID", type: "integer", formatCellValue: "getPubchemUrl(pubchemSidUrl, value)", showHover:true, prompt: "Pubchem SID"},
+                               
+                {name: "Protein", title: "Protein", valueXPath:"Name", showHover:true, prompt: "Protein"},
+                
+                {name: "FunctionalGroups", title: "Functional Groups", valueXPath:"../../Descriptors/FunctionalGroups", showHover:true, prompt: "Functional Groups"},
+
+                {name: "MinAC", title: "MinAC", valueXPath:"../../Descriptors/MinAC", type: "float", prompt: "MinAC (microM)", showHover:true},               
+                {name: "MaxAC", title: "MaxAC", valueXPath:"../../Descriptors/MaxAC", type: "float", prompt: "MaxAC (microM)", showHover:true},                              
+                {name: "MinTC", title: "MinTC", valueXPath:"../../Descriptors/MinTC", type: "float", prompt: "MinTC (microM)", showHover:true},
+                {name: "MaxTC", title: "MaxTC", valueXPath:"../../Descriptors/MaxTC", type: "float", prompt: "MaxTC (microM)", showHover:true},
+                
+                {name: "AllAssaysActiveCount", title: "Active", valueXPath:"PromiscuityCounts/AllAssays/Active/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'AllAssaysActiveURL')", showHover:true},
+                {name: "AllAssaysTotalCount", title: "Total", valueXPath:"PromiscuityCounts/AllAssays/Total/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'AllAssaysTotalURL')", showHover:true},
+                {name: "AllAssaysActiveURL", title: "ActiveURL", valueXPath:"PromiscuityCounts/AllAssays/Active/URL", showIf:"false", showHover:true},
+                {name: "AllAssaysTotalURL", title: "TotalURL", valueXPath:"PromiscuityCounts/AllAssays/Total/URL", showIf:"false", showHover:true}
+                            
+                ];
+   
+                return gridFields;
+            };
+            
+            function getPubchemUrl(urlPrefix, id){
+                var pubchemUrl = (id == null || id == "") ? id : Canvas.linkHTML(urlPrefix + id, id);
+                return pubchemUrl;
+            }
+            
+            function getImgHTML(chemStructureUrl, cid, width, height){
+            	var imgSrc = chemStructureUrl + '?cid=' + cid + '&width=' + width + '&height='+ height
+                return Canvas.imgHTML({src: imgSrc, width: width, height: height});
+            }
+            
+            function getPubChemAssaysLink(value, record, recordName){
+                var url = record[recordName];
+                if(url == null || url == ""){
+                    return value;
+                }
+                else{
+                    var url2 = (value == null || value == "") ? value : Canvas.linkHTML(url, value);
+                    return url2;
+                }                   
+            }
+            
+            function getListGridHeaderSpans(){
+                var headersSpans = [
+					{
+						fields: ["MinAC", "MaxAC", "MinTC", "MaxTC"],
+						prompt: "Descriptors",
+						title: ["Descriptors"]
+					},
+                    {
+                        fields: ["AllAssaysActiveCount", "AllAssaysTotalCount"],
+                        prompt: "All Assays",
+                        title: ["All Assays"]
+                    }
+                ]
+                return headersSpans;
+            }
+            
+            function getHTSDataSource(dsId, fields){
+            	var xml = getXML();
+                var htsDS = DataSource.create({
+                    ID: dsId,
+                    fields: fields,
+                    dataFormat: "xml",
+                    dataURL: xml,
+                    recordXPath: "//Protein"
+                });
+                return htsDS;
+            }
+            
+            
+            function getHTSGridListWithFilter(htsDS, gridId, headersSpans){
+                var gridList = ListGrid.create({
+                    ID: gridId,
+                    dataSource: htsDS,
+                    headerSpans: headersSpans,
+                    canReorderRecords:true,
+                    width:"100%",
+                    height:"80%",
+                    headerHeight: 40,
+                    alternateRecordStyles:true,
+                    autoFetchData: true,
+                    showFilterEditor: true,
+                    filterOnKeygroupStartOpenpress: true,
+                    groupStartOpen:"all",
+                    groupByField: 'CID',
+                    createRecordComponent : function(record, column){
+                        var fieldName = this.getFieldName(colNum);
+                        if (fieldName == "viewStructure") {
+                            var button = IButton.create({
+                                
+                            })
+                        }
+                    }
+                });
+                
+//                gridList.hideFields(["MolecularWeight", "XLogP", "HydrogenBondDonorCount", "HydrogenBondAcceptorCount", "TPSA", "Complexity", "RotatableBondCount", "MolecularFormula", "TotalFormalCharge", "HeavyAtomCount", "AtomChiralCount", "AtomChiralDefCount", "AtomChiralUndefCount", "BondChiralCount", "BondChiralDefCount", "BondChiralUndefCount", "IsotopeAtomCount", "CovalentUnitCount", "TautomerCount"]);
+                gridList.setAutoFitWidth("CID", true);
+                gridList.setAutoFitWidth("MinAC", true);
+                gridList.setAutoFitWidth("MaxAC", true);
+                gridList.setAutoFitWidth("MinTC", true);
+                gridList.setAutoFitWidth("MaxTC", true);
+                return gridList;
+            }
+          
+            function exportToXML(){
+                return "/pcpromiscuity/" + getUrlParams()["id"];
+            }
+
+            function exportToCSV(){
+                var file = getUrlParams()["id"];
+                return "/pcpromiscuity/" + file.replace(".xml", ".csv");
+            }
+            
+            var htsDS1 = getHTSDataSource("htsPipelineDS1", getListGridFields());
+            var listGrid = getHTSGridListWithFilter(htsDS1, "HTSPipeline1", getListGridHeaderSpans());
+            
+            ImgButton.create({
+                ID: "exportCsv",
+                width:22,                
+                height:22,
+                src: "icons/32/csv.png",
+                prompt: "Export as CSV",
+                showRollOver: false,
+                showDown: false,
+                action: function(){
+            		window.location = exportToCSV();
+                }
+            });
+            
+            ImgButton.create({
+                ID: "exportXml",
+                width:22,                
+                height:22,
+                src: "icons/32/xml.png",
+                prompt: "Export as XML",
+                showRollOver: false,
+                showDown: false,
+                action: function(){
+            		window.open(exportToXML())
+                }
+            });
+            
+            ImgButton.create({
+                ID: "clearFilters",
+                width:22,                
+                height:22,
+                src: "icons/32/ClearFilter.png",
+                prompt: "Clear all filters in results table",
+                showRollOver: false,
+                showDown: false,
+                action: function(){
+                    listGrid.setFilterEditorCriteria(null);
+                    listGrid.filterData(listGrid.getFilterEditorCriteria());
+                }
+            });
+            
+            var toolStrip = ToolStrip.create({
+                width: 90,
+                height:24,
+                members: ["exportCsv", "separator", "exportXml", "separator", "clearFilters"]
+            })
+            
+            var headerLabel = Label.create({
+                contents: "<b>Promiscuity&nbsp;Results</b>",
+                width: "20%",
+                height: 24
+            });
+            
+            var toolStripLayout = HLayout.create({
+                membersMargin: 5,
+                align: "right",
+                width:"100%",
+                height: 24,
+                members: [headerLabel, toolStrip]
+            });           
+            
+            var searchResultsTabPane = VLayout.create({
+                position:"relative",
+                membersMargin: 5,
+                width:"95%",
+                height: "80%",
+                members: [toolStripLayout, listGrid]
+            });
+            
+        </script>       
+    </body>
+</html>
