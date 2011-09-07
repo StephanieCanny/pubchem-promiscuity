@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link href="/template/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+        <link rel="shortcut icon" href="images/favicon.ico" />
+        
+        <script type="text/javascript">var isomorphicDir = "smartclient_8.1/isomorphic/"</script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Core.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Foundation.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Containers.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Grids.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Forms.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_DataBinding.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/skins/Enterprise/load_skin.js"></script>
+        <script type="text/javascript" src="javascript/utils.js"></script>
+        
+        <title>Per Compound And Protein - PubChem Promiscuity</title>
+        
+        <script type="text/javascript">
+
+  			var _gaq = _gaq || [];
+  			_gaq.push(['_setAccount', 'UA-4732091-4']);
+  			_gaq.push(['_trackPageview']);
+
+  			(function() {
+    			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  			})();
+
+		</script>  
+    </head>
+        
+    <body>
+    <div><a href="index.html"><img border=0 src="images/PCPromiscuity.png"></img></a></div>
+        <script type="text/javascript">
+            var pubchemCidUrl = "http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?cid=";
+            var pubchemSidUrl = "http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?sid=";
+            function getListGridFields(){
+            	var serviceUrl = "http://pubchem.ncbi.nlm.nih.gov/image/imagefly.cgi";
+                var gridFields = [ 
+                {
+                    name: "viewStructure", title: "View", type: "link", width: 40, align: "center", showHover:true, canFilter:false, canSort:false, canGroupBy: false
+                    ,prompt: "Hover on icon to view structure"
+                    ,formatCellValue: function(value, record, rowNum, colNum, grid ){
+                        if(rowNum != null && rowNum > 0)
+                            return Canvas.imgHTML({src: "actions/view.png"});
+                    }
+                    ,hoverHTML: function(record){
+                        if(record != null)
+                            return getImgHTML( serviceUrl, record.CID, 240, 240);
+                    }
+                },
+                {
+                    name: "CID", title: "CID", valueXPath:"../../CID", type: "integer", formatCellValue: "getPubchemUrl(pubchemCidUrl, value)", showHover:true
+                    ,prompt: "Pubchem CID"
+                    ,hoverHTML: function(record){
+                        return "Click link to navigate to Pubchem CID summary page"
+                    }
+                },
+                {name: "SID", title: "SID",  valueXPath: "../../SID", type: "integer", formatCellValue: "getPubchemUrl(pubchemSidUrl, value)", showHover:true, prompt: "Pubchem SID"},
+                               
+                {name: "Protein", title: "Protein", width: 60, valueXPath:"Name", showHover:true, prompt: "Protein"},
+                
+                {name: "FunctionalGroups", title: "Functional Groups", width: 100, valueXPath:"../../Descriptors/FunctionalGroups", showHover:true, prompt: "Functional Groups"},
+
+                {name: "MinAC", title: "MinAC", valueXPath:"../../Descriptors/MinAC", type: "float", prompt: "MinAC (microM)", showHover:true},               
+                {name: "MaxAC", title: "MaxAC", valueXPath:"../../Descriptors/MaxAC", type: "float", prompt: "MaxAC (microM)", showHover:true},                              
+                {name: "MinTC", title: "MinTC", valueXPath:"../../Descriptors/MinTC", type: "float", prompt: "MinTC (microM)", showHover:true},
+                {name: "MaxTC", title: "MaxTC", valueXPath:"../../Descriptors/MaxTC", type: "float", prompt: "MaxTC (microM)", showHover:true},
+                
+                {name: "AllAssaysActiveCount", title: "Active", width: 40, valueXPath:"PromiscuityCounts/AllAssays/Active/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'AllAssaysActiveURL')", showHover:true},
+                {name: "AllAssaysTotalCount", title: "Total", width: 40, valueXPath:"PromiscuityCounts/AllAssays/Total/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'AllAssaysTotalURL')", showHover:true},
+                {name: "AllAssaysActiveURL", title: "ActiveURL", valueXPath:"PromiscuityCounts/AllAssays/Active/URL", showIf:"false", showHover:true},
+                {name: "AllAssaysTotalURL", title: "TotalURL", valueXPath:"PromiscuityCounts/AllAssays/Total/URL", showIf:"false", showHover:true},
+                
+                {name: "AllProjectsActiveCount", title: "Active", width: 40, valueXPath:"PromiscuityCounts/AllProjects/Active/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'AllProjectsActiveURL')", showHover:true},
+                {name: "AllProjectsTotalCount", title: "Total", width: 40, valueXPath:"PromiscuityCounts/AllProjects/Total/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'AllProjectsTotalURL')", showHover:true},
+                {name: "AllProjectsActiveURL", title: "ActiveURL", valueXPath:"PromiscuityCounts/AllProjects/Active/URL", showIf:"false", showHover:true},
+                {name: "AllProjectsTotalURL", title: "URL", valueXPath:"PromiscuityCounts/AllProjects/Total/URL", showIf:"false", showHover:true},
+                
+                {name: "MLPAssaysActiveCount", title: "Active", width: 40, valueXPath:"PromiscuityCounts/MLPAssays/Active/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'MLPAssaysActiveURL')", showHover:true},
+                {name: "MLPAssaysTotalCount", title: "Total", width: 40, valueXPath:"PromiscuityCounts/MLPAssays/Total/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'MLPAssaysTotalURL')", showHover:true},
+                {name: "MLPAssaysActiveURL", title: "ActiveURL", valueXPath:"PromiscuityCounts/MLPAssays/Active/URL", showIf:"false", showHover:true},
+                {name: "MLPAssaysTotalURL", title: "TotalURL", valueXPath:"PromiscuityCounts/MLPAssays/Total/URL", showIf:"false", showHover:true}, 
+
+                {name: "MLPProjectsActiveCount", title: "Active", width: 40, valueXPath:"PromiscuityCounts/MLPProjects/Active/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'MLPProjectsActiveURL')", showHover:true},
+                {name: "MLPProjectsTotalCount", title: "Total", width: 40, valueXPath:"PromiscuityCounts/MLPProjects/Total/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'MLPProjectsTotalURL')", showHover:true},
+                {name: "MLPProjectsActiveURL", title: "ActiveURL", valueXPath:"PromiscuityCounts/MLPProjects/Active/URL", showIf:"false", showHover:true},
+                {name: "MLPProjectsTotalURL", title: "TotalURL", valueXPath:"PromiscuityCounts/MLPProjects/Total/URL", showIf:"false", showHover:true},      
+                
+                {name: "ChEMBLAssaysActiveCount", title: "Active", width: 50, valueXPath:"PromiscuityCounts/ChEMBLAssays/Active/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'ChEMBLAssaysActiveURL')", showHover:true},
+                {name: "ChEMBLAssaysTotalCount", title: "Total", width: 50, valueXPath:"PromiscuityCounts/ChEMBLAssays/Total/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'ChEMBLAssaysTotalURL')", showHover:true},
+                {name: "ChEMBLAssaysActiveURL", title: "ActiveURL", valueXPath:"PromiscuityCounts/ChEMBLAssays/Active/URL", showIf:"false", showHover:true},
+                {name: "ChEMBLAssaysTotalURL", title: "TotalURL", valueXPath:"PromiscuityCounts/ChEMBLAssays/Total/URL", showIf:"false", showHover:true},
+                
+                {name: "NoProteinAssaysActiveCount", title: "Active", width: 50, valueXPath:"PromiscuityCounts/NoProteinAssays/Active/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'NoProteinAssaysActiveURL')", showHover:true},
+                {name: "NoProteinAssaysTotalCount", title: "Total", width: 50, valueXPath:"PromiscuityCounts/NoProteinAssays/Total/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'NoProteinAssaysTotalURL')", showHover:true},
+                {name: "NoProteinAssaysActiveURL", title: "ActiveURL", valueXPath:"PromiscuityCounts/NoProteinAssays/Active/URL", showIf:"false", showHover:true},
+                {name: "NoProteinAssaysTotalURL", title: "TotalURL", valueXPath:"PromiscuityCounts/NoProteinAssays/Total/URL", showIf:"false", showHover:true},
+                
+                {name: "AllProteinsActiveCount", title: "Active", width: 40, valueXPath:"PromiscuityCounts/AllProteins/Active/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'AllProteinsActiveURL')", showHover:true},
+                {name: "AllProteinsTotalCount", title: "Total", width: 40, valueXPath:"PromiscuityCounts/AllProteins/Total/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'AllProteinsTotalURL')", showHover:true},
+                {name: "AllProteinsActiveURL", title: "ActiveURL", valueXPath:"PromiscuityCounts/AllProteins/Active/URL", showIf:"false", showHover:true},
+                {name: "AllProteinsTotalURL", title: "TotalURL", valueXPath:"PromiscuityCounts/AllProteins/Total/URL", showIf:"false", showHover:true},
+                
+                {name: "LuciferaseAssaysActiveCount", title: "Active", width: 60, valueXPath:"PromiscuityCounts/LuciferaseAssays/Active/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'LuciferaseAssaysActiveURL')", showHover:true},
+                {name: "LuciferaseAssaysTotalCount", title: "Total", width: 60, valueXPath:"PromiscuityCounts/LuciferaseAssays/Total/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'LuciferaseAssaysTotalURL')", showHover:true},
+                {name: "LuciferaseAssaysActiveURL", title: "ActiveURL", valueXPath:"PromiscuityCounts/LuciferaseAssays/Active/URL", showIf:"false", showHover:true},
+                {name: "LuciferaseAssaysTotalURL", title: "TotalURL", valueXPath:"PromiscuityCounts/LuciferaseAssays/Total/URL", showIf:"false", showHover:true},
+                
+                {name: "BetaLactamaseAssaysActiveCount", title: "Active", width: 65, valueXPath:"PromiscuityCounts/BetaLactamaseAssays/Active/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'BetaLactamaseAssaysActiveURL')", showHover:true},
+                {name: "BetaLactamaseAssaysTotalCount", title: "Total", width: 65, valueXPath:"PromiscuityCounts/BetaLactamaseAssays/Total/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'BetaLactamaseAssaysTotalURL')", showHover:true},
+                {name: "BetaLactamaseAssaysActiveURL", title: "ActiveURL", valueXPath:"PromiscuityCounts/BetaLactamaseAssays/Active/URL", showIf:"false", showHover:true},
+                {name: "BetaLactamaseAssaysTotalURL", title: "TotalURL", valueXPath:"PromiscuityCounts/BetaLactamaseAssays/Total/URL", showIf:"false", showHover:true},    
+
+                {name: "FluorescenceAssaysActiveCount", title: "Active", width: 70, valueXPath:"PromiscuityCounts/FluorescenceAssays/Active/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'FluorescenceAssaysActiveURL')", showHover:true},
+                {name: "FluorescenceAssaysTotalCount", title: "Total", width: 70, valueXPath:"PromiscuityCounts/FluorescenceAssays/Total/Count", type: "integer", formatCellValue: "getPubChemAssaysLink(value, record, 'FluorescenceAssaysTotalURL')", showHover:true},
+                {name: "FluorescenceAssaysActiveURL", title: "ActiveURL", valueXPath:"PromiscuityCounts/FluorescenceAssays/Active/URL", showIf:"false", showHover:true},
+                {name: "FluorescenceAssaysTotalURL", title: "TotalURL", valueXPath:"PromiscuityCounts/FluorescenceAssays/Total/URL", showIf:"false", showHover:true}                
+                ];
+   
+                return gridFields;
+            };
+            
+            function getPubchemUrl(urlPrefix, id){
+                var pubchemUrl = (id == null || id == "") ? id : Canvas.linkHTML(urlPrefix + id, id);
+                return pubchemUrl;
+            }
+            
+            function getImgHTML(chemStructureUrl, cid, width, height){
+            	var imgSrc = chemStructureUrl + '?cid=' + cid + '&width=' + width + '&height='+ height
+                return Canvas.imgHTML({src: imgSrc, width: width, height: height});
+            }
+            
+            function getPubChemAssaysLink(value, record, recordName){
+                var url = record[recordName];
+                if(url == null || url == ""){
+                    return value;
+                }
+                else{
+                    var url2 = (value == null || value == "") ? value : Canvas.linkHTML(url, value);
+                    return url2;
+                }                   
+            }
+            
+            function getListGridHeaderSpans(){
+                var headersSpans = [
+					{
+    					fields: ["MinAC", "MaxAC", "MinTC", "MaxTC"],
+    					prompt: "Descriptors",
+    					title: ["Descriptors"]
+					},
+                    {
+                        fields: ["AllAssaysActiveCount", "AllAssaysTotalCount"],
+                        prompt: "All Assays",
+                        title: ["All Assays"]
+                    },
+                    {
+                        fields: ["AllProjectsActiveCount", "AllProjectsTotalCount"],
+                        prompt: "All Projects",
+                        title: ["All Projects"]
+                    },
+                    {
+                        fields: ["MLPAssaysActiveCount", "MLPAssaysTotalCount"],
+                        prompt: "MLP Assays",
+                        title: ["MLP Assays"]
+                    },
+                    {
+                        fields: ["MLPProjectsActiveCount", "MLPProjectsTotalCount"],
+                        prompt: "MLP Projects",
+                        title: ["MLP Projects"]
+                    },
+                    {
+                        fields: ["ChEMBLAssaysActiveCount", "ChEMBLAssaysTotalCount"],
+                        prompt: "ChEMBL Assays",
+                        title: ["ChEMBL Assays"]
+                    },
+                    {
+                        fields: ["NoProteinAssaysActiveCount", "NoProteinAssaysTotalCount"],
+                        prompt: "Assays With No Protein Targets",
+                        title: ["No Protein Assays"]
+                    },
+                    {
+                        fields: ["AllProteinsActiveCount", "AllProteinsTotalCount"],
+                        prompt: "All Proteins",
+                        title: ["All Proteins"]
+                    },
+                    {
+                        fields: ["LuciferaseAssaysActiveCount", "LuciferaseAssaysTotalCount"],
+                        prompt: "Luciferase Assays",
+                        title: ["Luciferase Assays"]
+                    },
+                    {
+                        fields: ["BetaLactamaseAssaysActiveCount", "BetaLactamaseAssaysTotalCount"],
+                        prompt: "Beta Lactamase Assays",
+                        title: ["Beta Lactamase Assays"]
+                    },                   
+                    {
+                        fields: ["FluorescenceAssaysActiveCount", "FluorescenceAssaysTotalCount"],
+                        prompt: "Fluorescence Assays",
+                        title: ["Fluorescence Assays"]
+                    }
+                ]
+                return headersSpans;
+            }
+            
+            function getHTSDataSource(dsId, fields){
+            	var xml = getXML();
+                var htsDS = DataSource.create({
+                    ID: dsId,
+                    fields: fields,
+                    dataFormat: "xml",
+                    dataURL: xml,
+                    recordXPath: "//Protein"
+                });
+                return htsDS;
+            }
+            
+            
+            function getHTSGridListWithFilter(htsDS, gridId, headersSpans){
+                var gridList = ListGrid.create({
+                    ID: gridId,
+                    dataSource: htsDS,
+                    headerSpans: headersSpans,
+                    canReorderRecords:true,
+                    width:"100%",
+                    height:"80%",
+                    headerHeight: 40,
+                    autoFitWidthApproach: "both",
+                    alternateRecordStyles:true,
+                    autoFetchData: true,
+                    showFilterEditor: true,
+                    filterOnKeygroupStartOpenpress: true,
+                    groupStartOpen:"all",
+                    groupByField: 'CID',
+                    createRecordComponent : function(record, column){
+                        var fieldName = this.getFieldName(colNum);
+                        if (fieldName == "viewStructure") {
+                            var button = IButton.create({
+                                
+                            })
+                        }
+                    }
+                });
+                
+//                gridList.hideFields(["MolecularWeight", "XLogP", "HydrogenBondDonorCount", "HydrogenBondAcceptorCount", "TPSA", "Complexity", "RotatableBondCount", "MolecularFormula", "TotalFormalCharge", "HeavyAtomCount", "AtomChiralCount", "AtomChiralDefCount", "AtomChiralUndefCount", "BondChiralCount", "BondChiralDefCount", "BondChiralUndefCount", "IsotopeAtomCount", "CovalentUnitCount", "TautomerCount"]);
+                gridList.setAutoFitWidth("CID", true);
+                gridList.setAutoFitWidth("SID", true);
+                gridList.setAutoFitWidth("MinAC", true);
+                gridList.setAutoFitWidth("MaxAC", true);
+                gridList.setAutoFitWidth("MinTC", true);
+                gridList.setAutoFitWidth("MaxTC", true);
+                gridList.setAutoFitWidth("RuleOf5Violations", true);
+                return gridList;
+            }
+          
+            function exportToXML(){
+                return "/pcpromiscuity/" + getUrlParams()["id"];
+            }
+
+            function exportToCSV(){
+                var file = getUrlParams()["id"];
+                return "/pcpromiscuity/" + file.replace(".xml", ".csv");
+            }
+            
+            var htsDS1 = getHTSDataSource("htsPipelineDS1", getListGridFields());
+            var listGrid = getHTSGridListWithFilter(htsDS1, "HTSPipeline1", getListGridHeaderSpans());
+            
+            ImgButton.create({
+                ID: "exportCsv",
+                width:22,                
+                height:22,
+                src: "icons/32/csv.png",
+                prompt: "Export as CSV",
+                showRollOver: false,
+                showDown: false,
+                action: function(){
+            		window.location = exportToCSV();
+                }
+            });
+            
+            ImgButton.create({
+                ID: "exportXml",
+                width:22,                
+                height:22,
+                src: "icons/32/xml.png",
+                prompt: "Export as XML",
+                showRollOver: false,
+                showDown: false,
+                action: function(){
+            		window.open(exportToXML())
+                }
+            });
+            
+            ImgButton.create({
+                ID: "clearFilters",
+                width:22,                
+                height:22,
+                src: "icons/32/ClearFilter.png",
+                prompt: "Clear all filters in results table",
+                showRollOver: false,
+                showDown: false,
+                action: function(){
+                    listGrid.setFilterEditorCriteria(null);
+                    listGrid.filterData(listGrid.getFilterEditorCriteria());
+                }
+            });
+            
+            var toolStrip = ToolStrip.create({
+                width: 90,
+                height:24,
+                members: ["exportCsv", "separator", "exportXml", "separator", "clearFilters"]
+            })
+            
+            var headerLabel = Label.create({
+                contents: "<b>Promiscuity&nbsp;Results</b>",
+                width: "20%",
+                height: 24
+            });
+            
+            var toolStripLayout = HLayout.create({
+                membersMargin: 5,
+                align: "right",
+                width:"100%",
+                height: 24,
+                members: [headerLabel, toolStrip]
+            });           
+            
+            var searchResultsTabPane = VLayout.create({
+                position:"relative",
+                membersMargin: 5,
+                width:"95%",
+                height: "80%",
+                members: [toolStripLayout, listGrid]
+            });
+            
+        </script>       
+    </body>
+</html>

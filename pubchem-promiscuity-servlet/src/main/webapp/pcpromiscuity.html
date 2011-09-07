@@ -1,0 +1,150 @@
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link href="/template/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+        <link rel="shortcut icon" href="images/favicon.ico" />
+        
+        <script type="text/javascript">var isomorphicDir = "smartclient_8.1/isomorphic/"</script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Core.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Foundation.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Containers.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Grids.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_Forms.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/system/modules/ISC_DataBinding.js"></script>
+        <script type="text/javascript" src="smartclient_8.1/isomorphic/skins/Enterprise/load_skin.js"></script>
+        <script type="text/javascript" src="javascript/utils.js"></script>
+        
+        <style type="text/css">
+        	#links .pageLinks {
+				font: normal 12px arial, tahoma, sans-serif;
+				color: #444;
+			}
+        </style>
+        
+        <title>PubChem Promiscuity - Analysis</title>
+        
+        <script type="text/javascript">
+
+  			var _gaq = _gaq || [];
+  			_gaq.push(['_setAccount', 'UA-4732091-4']);
+  			_gaq.push(['_trackPageview']);
+
+  			(function() {
+    			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  			})();
+
+		</script>
+    </head>
+	<body>
+	<div><a href="index.html"><img border=0 src="images/PCPromiscuity.png"></img></a></div>
+        <script type="text/javascript">
+            
+            var header = Label.create({
+                contents: "<b>PubChem Promiscuity</b>",
+                width: 500,
+                height: 25,
+                autoDraw: true
+//                baseStyle: "exampleSeparator"
+            });
+            
+            var searchForm = DynamicForm.create({
+                ID: "pubchemSearchForm",
+                width: 500,
+                height: 210,
+                padding:5,
+                numCols: 2,
+//                titleOrientation: "top",
+                fields: [
+                    {name: "email", title: "Email", type:"text", required: true, width: 200, errorOrientation: "right", value: getCookie('pcpemail'),
+                        requiredMessage: "Email address field is required",
+                        hint: "&nbsp;*Required&nbsp;by&nbsp;NCBI&nbsp;web&nbsp;services",
+                        validators: [{type: "regexp",  expression: "^([a-zA-Z0-9_.\\-+])+@(([a-zA-Z0-9\\-])+\\.)+[a-zA-Z0-9]{2,4}$"}],
+                        icons: [{src: "other/help.png", prompt: "Email&nbsp;is&nbsp;required&nbsp;in&nbsp;order<br>to&nbsp;submit&nbsp;a&nbsp;request&nbsp;to<br>NCBI&nbsp;web&nbsp;services."}]
+                    },
+                    { name: "outputFormat", title: "Output Format", type:"select", width: 200,
+                        defaultToFirstOption: true,
+                        valueMap: { 
+                            "pcmode" : "Per Compound",
+                            "ppmode" : "Per Compound and Protein"
+                        },
+                        icons: [{src: "other/help.png", 
+                                prompt: "<b><u>Output&nbsp;Formats</u></b><br><b><i>Per&nbsp;compound:</i></b>&nbsp;overall&nbsp;promiscuity&nbsp;counts<br>for&nbsp;each&nbsp;compound.<br><b><i>Per&nbsp;compound&nbsp;and&nbsp;protein:</i></b>&nbsp;individual&nbsp;counts<br>per&nbsp;protein&nbsp;target."
+                        }]
+                    },
+                    { name: "searchType", title: "Search Type", type:"select", width: 200,
+                        defaultToFirstOption: true,
+                        valueMap: { 
+                            "simple" : "Simple",
+                            "advanced" : "Advanced"
+                        },
+                        icons: [{src: "other/help.png",
+                                prompt: "<b><u>Search&nbsp;Type</u></b><br><b><i>Simple:</i></b>&nbsp;provides&nbsp;overall&nbsp;assay&nbsp;counts, compound descriptors and functional group detection, and is faster than the advanced mode.<br><b><i>Advanced:</i></b>&nbsp;provides&nbsp;all&nbsp;of&nbsp;the&nbsp;same&nbsp;data&nbsp;from&nbsp;simple&nbsp;mode and also the following counts:<br><ul><li>All Project Active and Total Counts</li><li>MLP Assay Active and Total Counts</li><li>MLP Project Active and Total Counts</li><li>ChEMBL Assay Active and Total Counts</li><li>Protein Active and Total Counts</li><li>No Protein Assay Active and Total Counts</li><li>Beta Lactamase Assay Active and Total Counts</li><li>Luciferase Assay Active and Total Counts</li><li>Fluorescence Assay Active and Total Counts</li></ul>"
+                        }]
+                    },
+                    { name: "database", title: "Select ID Type", type:"select", width: 200,
+                        defaultToFirstOption: true,
+                        valueMap: { 
+                            "pccompound" : "CID",
+                            "pcsubstance" : "SID"
+                        },
+                        icons: [{src: "other/help.png", 
+                                prompt: "Type&nbsp;of&nbsp;ID&nbsp;(CID or SID)<br>that&nbsp;you&nbsp;will&nbsp;be&nbsp;providing&nbsp;in<br>the&nbsp;text&nbsp;area&nbsp;below."
+                        }]
+                    },
+                    {name: "ids", title: "Enter list of CIDs or SIDs", type:"textArea", required: true, width: 200, errorOrientation: "right",
+                        requiredMessage: "List of CIDs or SIDs is required"
+                    }
+                ],
+                canSubmit: true,
+                method: "POST",
+                action: "promiscuity"
+            });
+            
+            var submitButton = IButton.create({
+                ID: "submitButton",
+                title: "<b>Submit</b>",
+                icon: "actions/find.png",
+                click: function () {
+                    if(searchForm.validate()){                  	
+                    	setCookie("pcpemail", searchForm.getItem("email").getValue(), 365);
+                        searchForm.submitForm();
+                    }
+                }
+            });
+            
+            var searchFormTabPane = VLayout.create({
+                position:"relative",
+                membersMargin: 8,
+//                height:40,
+                members: [header, searchForm, submitButton]
+            });
+            
+            
+            var contents = HLayout.create({
+                position:"relative",
+                membersMargin: 10,
+//                height:40,
+                members: [searchFormTabPane]
+            });          
+            
+            var simplePane = VStack.create({
+                width: "100%",
+                position:"relative",
+                membersMargin: 5,
+                members:[ contents]       
+            });
+           
+            
+        </script>
+        <br><br>
+        <div id="links"><div class="pageLinks">
+        <img src="images/actions/view.png" alt="View" />&nbsp;<a href="FunctionalGroups.xml" target="_blank">Functional Groups</a><br>
+        <img src="images/actions/view.png" alt="View" />&nbsp;<a href="sampledata/promiscuous_CIDs_500.txt" target="_blank">Promiscuous CIDs</a><br>
+        <img src="images/other/table.png" alt="View" />&nbsp;<a href="/pcpromiscuity/PerCompound_Advanced.html?id=sampledata/pcdata_promiscuous_percompound_adv.xml" target="_blank">Promiscuous CIDs Example Results</a><br>
+        <img src="images/other/code.png" alt="View" />&nbsp;<a href="http://code.google.com/p/pubchem-promiscuity/" target="_blank">PubChem Promiscuity Source Code</a><br>
+        <img src="images/other/letter2.gif" alt="View" />&nbsp;<a href="mailto:southern@scripps.edu?subject=PubChem Promiscuity Feedback" target="_blank">Feedback</a>
+        </div></div>
+    </body>
+</html>

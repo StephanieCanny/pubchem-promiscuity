@@ -1,0 +1,85 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+		<link href="/template/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+    	<link rel="shortcut icon" href="images/favicon.ico" />
+		
+		<script type="text/javascript" src="javascript/utils.js"></script>
+		<style type="text/css">
+body {
+	overflow: hidden
+}
+
+#loading {
+	border: 1px solid #ccc;
+	position: absolute;
+	left: 30%;
+	top: 40%;
+	padding: 2px;
+	z-index: 20001;
+	height: auto;
+}
+
+#loading a {
+	color: #225588;
+}
+
+#loading .loadingIndicator {
+	background: white;
+	font: bold 15px tahoma, arial, helvetica;
+	padding: 10px;
+	margin: 0;
+	height: auto;
+	color: #444;
+}
+
+#loadingMsg {
+	font: normal 11px arial, tahoma, sans-serif;
+}
+</style>
+		<title>Processing request..</title>
+		
+		<script type="text/javascript">
+
+  			var _gaq = _gaq || [];
+  			_gaq.push(['_setAccount', 'UA-4732091-4']);
+  			_gaq.push(['_trackPageview']);
+
+  			(function() {
+    			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  			})();
+
+		</script>
+	</head>
+	<body>
+	<div><a href="index.html"><img border=0 src="images/PCPromiscuity.png"></img></a></div>
+		<div id="loadingWrapper">
+		<div id="loading">
+		<div class="loadingIndicator">
+		<img src="http://pubchem.ncbi.nlm.nih.gov/images/pcanimation.gif" style="margin-right: 8px; float: left; vertical-align: top;" />Processing request...<br/>
+		<span id="loadingMsg">Each compound search takes a few seconds.This page automatically refreshes.</span></div>
+		</div>
+		</div> 
+		<FORM id="waiting_form" action="waiting/">
+			<INPUT TYPE="hidden" name="id" id="id" value="">
+			<INPUT TYPE="hidden" name="ppmode" id="ppmode" value="">
+		</FORM>
+		<SCRIPT LANGUAGE="javascript">
+
+			function checkRequest(){
+				var parameters = getUrlParams();
+				var idElem = document.getElementById("id");
+				idElem.value = parameters["id"];
+
+				var wForm = document.getElementById("waiting_form");
+				wForm.submit();
+			}
+
+			setTimeout('checkRequest()', 10000);
+			 	
+		</SCRIPT>
+	</body>
+</html>
