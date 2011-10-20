@@ -54,10 +54,7 @@
 
 
 	<category name="edu.scripps.fl.pubchem.promiscuity">
-		<priority value="ERROR" />
-	</category>
-	<category name="edu.scripps.fl.cdk">
-		<priority value="ERROR" />
+		<priority value="WARN" />
 	</category>
 	<category name="edu.scripps.fl.pubchem.promiscuity.model">
 		<priority value="ERROR" />

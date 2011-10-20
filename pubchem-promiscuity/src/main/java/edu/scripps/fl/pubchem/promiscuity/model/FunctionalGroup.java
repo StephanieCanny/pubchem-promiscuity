@@ -18,7 +18,7 @@ package edu.scripps.fl.pubchem.promiscuity.model;
 public class FunctionalGroup {
 
 	private String name;
-	private String smiles;
+	private String SMARTS;
 
 	public String getName() {
 		return name;
@@ -28,12 +28,13 @@ public class FunctionalGroup {
 		this.name = name;
 	}
 
-	public String getSmiles() {
-		return smiles;
+	public String getSMARTS() {
+		return SMARTS;
 	}
 
-	public void setSmiles(String smiles) {
-		this.smiles = smiles;
+	public void setSMARTS(String SMARTS) {
+		this.SMARTS = SMARTS;
 	}
+	
 
 }

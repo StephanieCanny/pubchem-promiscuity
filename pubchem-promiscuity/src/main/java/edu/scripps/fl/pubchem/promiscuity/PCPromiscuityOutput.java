@@ -18,6 +18,8 @@ package edu.scripps.fl.pubchem.promiscuity;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.URL;
@@ -33,15 +35,19 @@ import org.dom4j.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.scripps.fl.pubchem.promiscuity.model.CategorizedFunctionalGroups;
 import edu.scripps.fl.pubchem.promiscuity.model.CompoundPromiscuityInfo;
 import edu.scripps.fl.pubchem.promiscuity.model.FunctionalGroup;
 import edu.scripps.fl.pubchem.promiscuity.model.PCPromiscuityParameters;
 import edu.scripps.fl.pubchem.promiscuity.model.PromiscuityCount;
 import edu.scripps.fl.pubchem.promiscuity.model.Protein;
+import edu.scripps.fl.rhinoproject.JSProcessor;
 
 public class PCPromiscuityOutput {
 
 	private static final Logger log = LoggerFactory.getLogger(PCPromiscuityOutput.class);
+	
+	private JSProcessor jsp = null;
 
 	public static final String[] names = new String[] { PCPromiscuityFactory.allAssayName, PCPromiscuityFactory.allProjectsName,
 			PCPromiscuityFactory.mlpAssaysName, PCPromiscuityFactory.mlpProjectsNames, PCPromiscuityFactory.chemblName,
@@ -53,6 +59,7 @@ public class PCPromiscuityOutput {
 			"TPSA", "Complexity", "RotatableBondCount", "MolecularFormula", "TotalFormalCharge", "HeavyAtomCount", "AtomChiralCount",
 			"AtomChiralDefCount", "AtomChiralUndefCount", "BondChiralCount", "BondChiralDefCount", "BondChiralUndefCount",
 			"IsotopeAtomCount", "CovalentUnitCount", "TautomerCount", PCPromiscuityFactory.ruleFiveName };
+	public static final String[] functionalGroupCategories = {"PAINS_A", "PAINS_B", "PAINS_C"};
 
 	public void compoundPromiscuityToCSV(Map<Long, CompoundPromiscuityInfo> map, PCPromiscuityParameters params, File file)
 			throws Exception {
@@ -65,8 +72,11 @@ public class PCPromiscuityOutput {
 
 		if (params.getDatabase().equals("pcsubstance"))
 			out.write("SID,");
-		out.write("CID,");
-		out.write("Functional Groups");
+		out.write("CID");
+		for(String fgCat: functionalGroupCategories){
+			out.write("," + fgCat);
+		}
+		out.write(",PossibleFalseAromaticityDetection");
 		for (String cc : descriptorColumns) {
 			out.write("," + cc);
 		}
@@ -124,6 +134,9 @@ public class PCPromiscuityOutput {
 	private void printExtraCommas(PCPromiscuityParameters params, String[] descriptorColumns, Writer out) throws IOException {
 		if (params.getDatabase().equals("pcsubstance"))
 			out.write(",");
+		for(String fg: functionalGroupCategories){
+			out.write(",");
+		}
 		for (String cc : descriptorColumns) {
 			out.write(",");
 		}
@@ -133,19 +146,42 @@ public class PCPromiscuityOutput {
 
 	private void printDescriptors(PCPromiscuityParameters params, CompoundPromiscuityInfo cpInfo, Writer out, String[] descriptorColumns)
 			throws IOException {
-		if (params.getDatabase().equals("pcsubstance"))
-			out.write("," + cpInfo.getCID());
-		out.write(",\"");
-		Map<String, Object> descriptors = cpInfo.getDescriptors();
-		List<FunctionalGroup> fgs = cpInfo.getFunctionalGroups();
-		List<String> groups = new ArrayList<String>();
-		for (FunctionalGroup group : fgs) {
-			groups.add(group.getName());
+		if (params.getDatabase().equals("pcsubstance")){
+			if(cpInfo.getCID() != null)
+				out.write("," + cpInfo.getCID());
+			else
+				out.write(",");
 		}
-		out.write(StringUtils.join(groups, ","));
-		out.write("\"");
+		
+		Map<String, Object> descriptors = cpInfo.getDescriptors();
+		Map<String, CategorizedFunctionalGroups> categorizedFGMap = cpInfo.getCategorizedFunctionalGroupsMap();
+		for(String category: functionalGroupCategories){
+			CategorizedFunctionalGroups cFGs = categorizedFGMap.get(category);
+			if(cFGs != null){
+				out.write(",\"");
+				List<FunctionalGroup> fgs = cFGs.getFunctionalGroups();
+				List<String> groups = new ArrayList<String>();
+				for (FunctionalGroup group : fgs) {
+					groups.add(group.getName());
+				}
+				out.write(StringUtils.join(groups, ","));
+				out.write("\"");
+			}
+			else{
+				out.write(",");
+			}
+		}
+		
+		if(cpInfo.isPossibleFalseAromaticityDetection())
+        	out.write(",true");
+		else
+			out.write(",");
+        
 		for (String cc : descriptorColumns) {
-			out.write(", " + descriptors.get(cc));
+			if(descriptors.get(cc) !=null)
+				out.write(", " + descriptors.get(cc));
+			else
+				out.write(", ");
 		}
 	}
 
@@ -163,79 +199,106 @@ public class PCPromiscuityOutput {
 
 	public void compoundPromiscuityToXML(Map<Long, CompoundPromiscuityInfo> map, PCPromiscuityParameters params, File file)
 			throws Exception {
+	    
+	    jsp = new JSProcessor();
+	    jsp.init();
+        try{
+                        
+            InputStream is = getClass().getResourceAsStream("/compress.txt");
+            jsp.setCodeSource(new InputStreamReader(is));
+            
+            String[] descriptorColumns = descriptorNames;
+            List<Long> ids = params.getIds();
 
-		String[] descriptorColumns = descriptorNames;
-		List<Long> ids = params.getIds();
+            URL url = getClass().getClassLoader().getResource("Result.xml");
+            Document doc = new XMLDocument().readDocFromURL(url);
 
-		URL url = getClass().getClassLoader().getResource("Result.xml");
-		Document doc = new XMLDocument().readDocFromURL(url);
+            Element root = doc.getRootElement();
+            String db = params.getDatabase();
+            String idString = "SID";
+            if (db.equalsIgnoreCase("pccompound"))
+                idString = "CID";
+            for (Long id : ids) {
+                Element result = root.addElement("Result");
+                result.addElement(idString).addText(id.toString());
 
-		Element root = doc.getRootElement();
-		String db = params.getDatabase();
-		String idString = "SID";
-		if (db.equalsIgnoreCase("pccompound"))
-			idString = "CID";
-		for (Long id : ids) {
-			Element result = root.addElement("Result");
-			result.addElement(idString).addText(id.toString());
+                CompoundPromiscuityInfo cpInfo = map.get(id);
+                if (cpInfo == null)
+                    result.addElement("NoResults").addText("Error Processing this compound.");
+                else {
+                    if (cpInfo.getOnHold())
+                        result.addElement("OnHold").addText("True");
+                    else {
+                        if (db.equalsIgnoreCase("pcsubstance")){
+                            Element CIDe = result.addElement("CID");
+                            if(cpInfo.getCID() != null)
+                                CIDe.addText(cpInfo.getCID().toString());
+                        }
 
-			CompoundPromiscuityInfo cpInfo = map.get(id);
-			if (cpInfo == null)
-				result.addElement("NoResults").addText("Error Processing this compound.");
-			else {
-				if (cpInfo.getOnHold())
-					result.addElement("OnHold").addText("True");
-				else {
-					if (db.equalsIgnoreCase("pcsubstance"))
-						result.addElement("CID").addText(cpInfo.getCID().toString());
+                        Map<String, Object> descriptors = cpInfo.getDescriptors();
+                        Map<String, CategorizedFunctionalGroups> categorizedFGMap = cpInfo.getCategorizedFunctionalGroupsMap();
 
-					Map<String, Object> descriptors = cpInfo.getDescriptors();
-					List<FunctionalGroup> fgs = cpInfo.getFunctionalGroups();
+                        Element descriptorsE = result.addElement("Descriptors");
+                        for(String category: functionalGroupCategories){
+                        	Element fgCategoryE = descriptorsE.addElement(category);
+                			CategorizedFunctionalGroups cFGs = categorizedFGMap.get(category);
+                			if(cFGs != null){
+                				List<FunctionalGroup> fgs = cFGs.getFunctionalGroups();
+                				List<String> groups = new ArrayList<String>();
+                				for (FunctionalGroup group : fgs) {
+                					groups.add(group.getName());
+                				}
+                				fgCategoryE.addText(StringUtils.join(groups, ", "));
+                			}
+                        }
+                        Element possibleFalse = descriptorsE.addElement("PossibleFalseAromaticityDetection");
+                        if(cpInfo.isPossibleFalseAromaticityDetection())
+                        	possibleFalse.addText("true");
+                        
+                        for (String cc : descriptorColumns) {
+                            Element descriptorCC = descriptorsE.addElement(StringUtils.remove(cc, " "));
+                            if(descriptors.get(cc) != null)
+                            	descriptorCC.addText(descriptors.get(cc).toString());
+                        }
 
-					Element descriptorsE = result.addElement("Descriptors");
-					List<String> groups = new ArrayList<String>();
-					for (FunctionalGroup group : fgs) {
-						groups.add(group.getName());
-					}
-					Element functionalGroups = descriptorsE.addElement("FunctionalGroups").addText(StringUtils.join(groups, ", "));
-					for (String cc : descriptorColumns) {
-						descriptorsE.addElement(StringUtils.remove(cc, " ")).addText(descriptors.get(cc).toString());
-					}
+                        Element proteinsE = result.addElement("Proteins");
+                        if (params.getPerProteinMode()) {
+                            Map<Protein, Map<String, PromiscuityCount<?>>> proteinCounts = cpInfo.getPerProteinCounts();
+                            Set<Protein> proteins = proteinCounts.keySet();
+                            for (Protein protein : proteins) {
+                                Element proteinE = proteinsE.addElement("Protein");
+                                proteinE.addElement("Name").addText(protein.getName());
+                                Element promiscuityCountsE = proteinE.addElement("PromiscuityCounts");
+                                addCounts(promiscuityCountsE, proteinCounts.get(protein), id, db);
+                            }
+                            Map<String, PromiscuityCount<?>> noProteinCounts = cpInfo.getNoProteinCounts();
+                            Element noProtein = proteinsE.addElement("Protein");
+                            noProtein.addElement("Name").addText("");
+                            Element noProteinCountsE = noProtein.addElement("PromiscuityCounts");
+                            addCounts(noProteinCountsE, noProteinCounts, id, db);
+                            root.addAttribute("format", "protein");
+                        } else {
+                            Map<String, PromiscuityCount<?>> counts = cpInfo.getCounts();
+                            Element allProteins = proteinsE.addElement("Protein");
+                            allProteins.addElement("Name").addText("All Proteins");
+                            Element allProteinCountsE = allProteins.addElement("PromiscuityCounts");
+                            addCounts(allProteinCountsE, counts, id, db);
+                            root.addAttribute("format", "compound");
+                        }
+                    }
+                }
 
-					Element proteinsE = result.addElement("Proteins");
-					if (params.getPerProteinMode()) {
-						Map<Protein, Map<String, PromiscuityCount<?>>> proteinCounts = cpInfo.getPerProteinCounts();
-						Set<Protein> proteins = proteinCounts.keySet();
-						for (Protein protein : proteins) {
-							Element proteinE = proteinsE.addElement("Protein");
-							proteinE.addElement("Name").addText(protein.getName());
-							Element promiscuityCountsE = proteinE.addElement("PromiscuityCounts");
-							addCounts(promiscuityCountsE, proteinCounts.get(protein), id, db);
-						}
-						Map<String, PromiscuityCount<?>> noProteinCounts = cpInfo.getNoProteinCounts();
-						Element noProtein = proteinsE.addElement("Protein");
-						noProtein.addElement("Name").addText("");
-						Element noProteinCountsE = noProtein.addElement("PromiscuityCounts");
-						addCounts(noProteinCountsE, noProteinCounts, id, db);
-						root.addAttribute("format", "protein");
-					} else {
-						Map<String, PromiscuityCount<?>> counts = cpInfo.getCounts();
-						Element allProteins = proteinsE.addElement("Protein");
-						allProteins.addElement("Name").addText("All Proteins");
-						Element allProteinCountsE = allProteins.addElement("PromiscuityCounts");
-						addCounts(allProteinCountsE, counts, id, db);
-						root.addAttribute("format", "compound");
-					}
-				}
-			}
-
-		}
-		new XMLDocument().write(doc, file);
-		log.info("Finished writing xml to: " + file.getAbsolutePath());
+            }
+            new XMLDocument().write(doc, file);
+            log.info("Finished writing xml to: " + file.getAbsolutePath());
+        }
+        finally{
+            jsp.exit();
+        }   
 	}
 
-	private void addCounts(Element element, Map<String, PromiscuityCount<?>> counts, Long id, String db) {
-
+	private void addCounts(Element element, Map<String, PromiscuityCount<?>> counts, Long id, String db) throws Exception {
+	    	    
 		String[] countColumns = names;
 		for (String cc : countColumns) {
 			PromiscuityCount<?> count = counts.get(cc);
@@ -264,7 +327,7 @@ public class PCPromiscuityOutput {
 		}
 	}
 
-	private void addCountElementURL(PromiscuityCount<?> count, List<?> list, Element elem, Long id, String db) {
+	private void addCountElementURL(PromiscuityCount<?> count, List<?> list, Element elem, Long id, String db) throws Exception {
 		if (list.size() > 0) {
 			String urlS;
 			if (count.getName().equals(PCPromiscuityFactory.allProteinsName)) {
@@ -280,14 +343,16 @@ public class PCPromiscuityOutput {
 				else
 					urlS = String.format(urlS, StringUtils.join(proteins, ","), "c", id);
 			} else if (count.getName().contains("Project")) {
-				urlS = "http://www.ncbi.nlm.nih.gov/sites/entrez?db=pcassay&term=" + StringUtils.join(list, "%2C");
+				urlS = "http://www.ncbi.nlm.nih.gov/sites/entrez?db=pcassay&term=" + StringUtils.join(list, ",");
 			} else {
 				urlS = "http://pubchem.ncbi.nlm.nih.gov/assay/assay.cgi?p=datatable&q=sidsr&qfile=&service=&similarity=&cmpdv=%s&AIDlist=%s&%sIDlist=%s";
 				if (db.equalsIgnoreCase("pcsubstance"))
-					urlS = String.format(urlS, "sub", StringUtils.join(list, "%0A"), "S", id);
+					urlS = String.format(urlS, "sub", StringUtils.join(list, ","), "S", id);
 				else
-					urlS = String.format(urlS, "cmpd", StringUtils.join(list, "%0A"), "C", id);
+					urlS = String.format(urlS, "cmpd", StringUtils.join(list, ","), "C", id);
 			}
+			// Compress URL using deflator and base64 encoding. URL will be decompress on the client side.
+			urlS = jsp.deflate(urlS);
 			elem.addElement("URL").addText(urlS);
 		}
 	}
