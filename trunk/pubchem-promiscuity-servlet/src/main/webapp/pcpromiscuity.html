@@ -40,6 +40,28 @@
 	<body>
 	<div><a href="index.html"><img border=0 src="images/PCPromiscuity.png"></img></a></div>
         <script type="text/javascript">
+
+	        function getIdsCount(values){
+	            var idsArr = values.split(/\D+/);
+	            var idList =new Array();
+	            for(var ii=0; ii < idsArr.length; ii++){
+	                var value = idsArr[ii];
+	                if(value != null && value != "")
+	                    idList.push(value);
+	            }
+	            return idList.length;
+	        }
+        
+	        function validateIdsCount(form, limit){
+	            var idsCount = getIdsCount(form.getValue('ids'))
+	            if(idsCount > limit){
+	                isc.warn("The number of CIDs or SIDs is limited to "  + limit + ".<br>You entered " + idsCount + " values.");
+	            }
+	            else{
+	            	setCookie("pcpemail", searchForm.getItem("email").getValue(), 365);
+	                form.submitForm();
+	            }
+	        }
             
             var header = Label.create({
                 contents: "<b>PubChem Promiscuity</b>",
@@ -63,24 +85,33 @@
                         validators: [{type: "regexp",  expression: "^([a-zA-Z0-9_.\\-+])+@(([a-zA-Z0-9\\-])+\\.)+[a-zA-Z0-9]{2,4}$"}],
                         icons: [{src: "other/help.png", prompt: "Email&nbsp;is&nbsp;required&nbsp;in&nbsp;order<br>to&nbsp;submit&nbsp;a&nbsp;request&nbsp;to<br>NCBI&nbsp;web&nbsp;services."}]
                     },
+                    /*
                     { name: "outputFormat", title: "Output Format", type:"select", width: 200,
                         defaultToFirstOption: true,
                         valueMap: { 
                             "pcmode" : "Per Compound",
                             "ppmode" : "Per Compound and Protein"
                         },
+                        changed: "pubchemSearchForm.getField('searchType').setValueMap(item.searchTypes[value])",
+                        searchTypes: {
+                            pcmode: ["Standard"],
+                            ppmode: ["Simple", "Standard"]
+                        },
                         icons: [{src: "other/help.png", 
                                 prompt: "<b><u>Output&nbsp;Formats</u></b><br><b><i>Per&nbsp;compound:</i></b>&nbsp;overall&nbsp;promiscuity&nbsp;counts<br>for&nbsp;each&nbsp;compound.<br><b><i>Per&nbsp;compound&nbsp;and&nbsp;protein:</i></b>&nbsp;individual&nbsp;counts<br>per&nbsp;protein&nbsp;target."
                         }]
-                    },
+                    },*/
                     { name: "searchType", title: "Search Type", type:"select", width: 200,
-                        defaultToFirstOption: true,
-                        valueMap: { 
-                            "simple" : "Simple",
-                            "advanced" : "Advanced"
-                        },
+                    	defaultToFirstOption: true,
+                    	hint: "&nbsp;*Search&nbsp;takes&nbsp;around&nbsp;3&nbsp;minutes.",
+                    	valueMap: {
+                    		"pcmode_slow" : "Per Compound",
+                    		"ppmode_fast" : "Per Compound and Protein - Fast, less details",
+                    		"ppmode_slow" : "Per Compound and Protein - Slow, more details"                   		
+                    		
+                    	},                        
                         icons: [{src: "other/help.png",
-                                prompt: "<b><u>Search&nbsp;Type</u></b><br><b><i>Simple:</i></b>&nbsp;provides&nbsp;overall&nbsp;assay&nbsp;counts, compound descriptors and functional group detection, and is faster than the advanced mode.<br><b><i>Advanced:</i></b>&nbsp;provides&nbsp;all&nbsp;of&nbsp;the&nbsp;same&nbsp;data&nbsp;from&nbsp;simple&nbsp;mode and also the following counts:<br><ul><li>All Project Active and Total Counts</li><li>MLP Assay Active and Total Counts</li><li>MLP Project Active and Total Counts</li><li>ChEMBL Assay Active and Total Counts</li><li>Protein Active and Total Counts</li><li>No Protein Assay Active and Total Counts</li><li>Beta Lactamase Assay Active and Total Counts</li><li>Luciferase Assay Active and Total Counts</li><li>Fluorescence Assay Active and Total Counts</li></ul>"
+                                prompt: "<b><u>Search&nbsp;Type</u></b><br><b><i>Per&nbsp;compound:</i></b>&nbsp;overall&nbsp;promiscuity&nbsp;counts<br>for&nbsp;each&nbsp;compound.<br><b><i>Per&nbsp;compound&nbsp;and&nbsp;protein:</i></b>&nbsp;individual&nbsp;counts<br>per&nbsp;protein&nbsp;target.<br><b><i>Fast:</i></b>&nbsp;provides&nbsp;overall&nbsp;assay&nbsp;counts, compound descriptors and functional group detection, and is faster than the slow mode.<br><b><i>Slow:</i></b>&nbsp;provides&nbsp;all&nbsp;of&nbsp;the&nbsp;same&nbsp;data&nbsp;from&nbsp;fast&nbsp;mode and also the following counts:<br><ul><li>All Project Active and Total Counts</li><li>MLP Assay Active and Total Counts</li><li>MLP Project Active and Total Counts</li><li>ChEMBL Assay Active and Total Counts</li><li>Protein Active and Total Counts</li><li>No Protein Assay Active and Total Counts</li><li>Beta Lactamase Assay Active and Total Counts</li><li>Luciferase Assay Active and Total Counts</li><li>Fluorescence Assay Active and Total Counts</li></ul>"
                         }]
                     },
                     { name: "database", title: "Select ID Type", type:"select", width: 200,
@@ -94,7 +125,12 @@
                         }]
                     },
                     {name: "ids", title: "Enter list of CIDs or SIDs", type:"textArea", required: true, width: 200, errorOrientation: "right",
-                        requiredMessage: "List of CIDs or SIDs is required"
+                        requiredMessage: "List of CIDs or SIDs is required",
+                        hint: "&nbsp;*See&nbsp;limits",
+                        iconVAlign: "center",
+                        icons: [{src: "other/help.png",
+							prompt: "<b>LIMITS</b><br>There&nbsp;is&nbsp;a&nbsp;limit&nbsp;to&nbsp;the&nbsp;number&nbsp;of&nbsp;CIDs&nbsp;or&nbsp;SIDs&nbsp;in&nbsp;the&nbsp;search&nbsp;list.<br><br><b><u><i>Per&nbsp;Compound&nbsp;-&nbsp;Slow:</i></u></b>&nbsp;&nbsp;1000&nbsp;CIDs&nbsp;or&nbsp;SIDs<br><b><u><i>Per&nbsp;Compound&nbsp;and&nbsp;Protein&nbsp;-&nbsp;Fast:</i></u></b>&nbsp;&nbsp;50&nbsp;CIDs&nbsp;or&nbsp;SIDs<br><b><u><i>Per&nbsp;Compound&nbsp;and&nbsp;Protein&nbsp;-&nbsp;Slow:</i></u></b>&nbsp;&nbsp;10&nbsp;CIDs&nbsp;or&nbsp;SIDs<br>"
+                    	}]
                     }
                 ],
                 canSubmit: true,
@@ -107,9 +143,21 @@
                 title: "<b>Submit</b>",
                 icon: "actions/find.png",
                 click: function () {
-                    if(searchForm.validate()){                  	
-                    	setCookie("pcpemail", searchForm.getItem("email").getValue(), 365);
-                        searchForm.submitForm();
+                    if(searchForm.validate()){
+                    	var outputFormat = searchForm.getValue('outputFormat');
+                    	var searchType = searchForm.getValue('searchType');
+                    	if(searchType == "pcmode_slow"){
+							//Per compound, advanced limit: 1000
+                    		validateIdsCount(searchForm, 1000);
+                    	}
+                    	else if(searchType == "ppmode_fast"){
+							//Per compound per protein, simple limit: 50
+                    		validateIdsCount(searchForm, 50);
+                    	}
+						else if(searchType == "ppmode_slow"){
+							//Per compound per protein, advanced limit: 10
+							validateIdsCount(searchForm, 10);
+                    	}   	                   	
                     }
                 }
             });
@@ -143,6 +191,7 @@
         <img src="images/actions/view.png" alt="View" />&nbsp;<a href="FunctionalGroups.xml" target="_blank">Functional Groups</a><br>
         <img src="images/actions/view.png" alt="View" />&nbsp;<a href="sampledata/promiscuous_CIDs_500.txt" target="_blank">Promiscuous CIDs</a><br>
         <img src="images/other/table.png" alt="View" />&nbsp;<a href="/pcpromiscuity/PerCompound_Advanced.html?id=sampledata/pcdata_promiscuous_percompound_adv.xml" target="_blank">Promiscuous CIDs Example Results</a><br>
+        <img src="images/other/table.png" alt="View" />&nbsp;<a href="sampledata/example_entrez_queries.html" target="_blank">Example Entrez Queries</a><br>
         <img src="images/other/code.png" alt="View" />&nbsp;<a href="http://code.google.com/p/pubchem-promiscuity/" target="_blank">PubChem Promiscuity Source Code</a><br>
         <img src="images/other/letter2.gif" alt="View" />&nbsp;<a href="mailto:southern@scripps.edu?subject=PubChem Promiscuity Feedback" target="_blank">Feedback</a>
         </div></div>

@@ -20,23 +20,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.log4j.xml.DOMConfigurator;
-import org.openscience.cdk.exception.CDKException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
 import edu.scripps.fl.pubchem.promiscuity.model.CompoundPromiscuityInfo;
-import edu.scripps.fl.pubchem.promiscuity.model.FunctionalGroup;
 import edu.scripps.fl.pubchem.promiscuity.model.PCPromiscuityParameters;
 import edu.scripps.fl.pubchem.promiscuity.model.PromiscuityCount;
 import edu.scripps.fl.pubchem.promiscuity.model.Protein;
@@ -47,31 +42,43 @@ public class TestPCPromiscuity {
 	private static final Logger log = LoggerFactory.getLogger(TestPCPromiscuity.class);
 
 	public TestPCPromiscuity() {
-		DOMConfigurator.configure(TestPCPromiscuity.class.getClassLoader().getResource("log4j.config.xml"));
+//		DOMConfigurator.configure(TestPCPromiscuity.class.getClassLoader().getResource("log4j.config.xml"));
 	}
 
 	public static void main(String[] args) {
+	    long start = System.currentTimeMillis();
 		TestPCPromiscuity test = new TestPCPromiscuity();
 		log.info("Memory usage at program beginning: " + test.memUsage());
 		PCPromiscuityParameters params = new PCPromiscuityParameters();
 
 		params.setDatabase("pccompound");
-		params.setSimpleMode(true);
+		params.setSimpleMode(false);
 		params.setPerProteinMode(false);
 
 		try {
 			// test.testCompoundSummarySetup(list, "pccompound");
-			// params.setIds(Arrays.asList(new Long[]{2519L
-			// }));
+//			 params.setIds(Arrays.asList(new Long[]{26543390L}));
 			params.setIds(test.getCompoundListFromTxtFiles("10_MLSMR.txt"));
+//			params.setIds(new ArrayList<Long>(Data.QUINONE_MOLS_MAP.values()));
 			Map<Long, CompoundPromiscuityInfo> map = new PCPromiscuityMain(params).getCompoundPromiscuityInfoMap();
-			String fileName = System.getProperty("user.home") + "\\PromiscuityCSV.csv";
+			String fileName = System.getProperty("user.home") + "\\PromiscuityCSV.csv";			
 			new PCPromiscuityOutput().compoundPromiscuityToCSV(map, params, new File(fileName));
+			fileName = System.getProperty("user.home") + "\\PromiscuityXML_adv_compressed.xml";
+//			String fileName = System.getProperty("user.home") + "\\PromiscuityXML.xml";
+            new PCPromiscuityOutput().compoundPromiscuityToXML(map, params, new File(fileName));
+			log.info("File: " + fileName);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
+		long end = System.currentTimeMillis();
+		long timeSec = (end - start)/1000;
+		long min = 0;
+		if(timeSec > 60){
+		    min = timeSec / 60;
+		    timeSec = timeSec % 60;
+		}
+		System.out.println(String.format("Time elapse: %s min %s sec", min, timeSec));
 	}
 
 	public List<Long> getCompoundListFromTxtFiles(String file) throws NumberFormatException, IOException {
@@ -113,25 +120,25 @@ public class TestPCPromiscuity {
 		System.out.println();
 	}
 
-	public void testFunctionalGroupDetection(Map<Long, CompoundPromiscuityInfo> map) throws CDKException, IOException,
-			ParserConfigurationException, SAXException, URISyntaxException {
-		new FunctionalGroupDetectionFactory().calculateFunctionalGroups(map);
-		for (Long id : map.keySet()) {
-			CompoundPromiscuityInfo compound = map.get(id);
-			printFunctionalGroups(compound);
-		}
-	}
+//	public void testFunctionalGroupDetection(Map<Long, CompoundPromiscuityInfo> map) throws CDKException, IOException,
+//			ParserConfigurationException, SAXException, URISyntaxException {
+//		new FunctionalGroupDetectionFactory().calculateFunctionalGroups(map);
+//		for (Long id : map.keySet()) {
+//			CompoundPromiscuityInfo compound = map.get(id);
+//			printFunctionalGroups(compound);
+//		}
+//	}
 
-	public void printFunctionalGroups(CompoundPromiscuityInfo compound) {
-		List<FunctionalGroup> groups = compound.getFunctionalGroups();
-		System.out.print("id: " + compound.getId() + " groups: ");
-		if (groups != null) {
-			for (FunctionalGroup group : groups) {
-				System.out.print(group.getName() + " ");
-			}
-		}
-		System.out.println();
-	}
+//	public void printFunctionalGroups(CompoundPromiscuityInfo compound) {
+//		List<FunctionalGroup> groups = compound.getFunctionalGroups();
+//		System.out.print("id: " + compound.getId() + " groups: ");
+//		if (groups != null) {
+//			for (FunctionalGroup group : groups) {
+//				System.out.print(group.getName() + " ");
+//			}
+//		}
+//		System.out.println();
+//	}
 
 	public void testEntrezRequests(PCPromiscuityParameters params) throws Exception {
 		PCPromiscuityMain main = new PCPromiscuityMain(params);
@@ -142,7 +149,7 @@ public class TestPCPromiscuity {
 			System.out.println(key);
 			CompoundPromiscuityInfo compound = compounds.get(key);
 			printCompoundInfo(compound);
-			printFunctionalGroups(compound);
+//			printFunctionalGroups(compound);
 			if (compound.getOnHold()) {
 				System.out.println(String.format("%s\t%s", key, "on hold"));
 			} else if (!compound.getOnHold()) {

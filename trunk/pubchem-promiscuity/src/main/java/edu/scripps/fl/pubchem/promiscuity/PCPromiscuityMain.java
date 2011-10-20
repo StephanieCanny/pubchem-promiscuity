@@ -77,46 +77,44 @@ public class PCPromiscuityMain {
 			} else {
 				ELinkResult result = (ELinkResult) overall.getSIDToCIDMap().get(keyId);
 				List<Long> CIDs = result.getIds("pccompound", "pcsubstance_pccompound_same");
-				compound.setCID(CIDs.get(0));
+				if(CIDs != null && CIDs.size() > 0)
+					compound.setCID(CIDs.get(0));
 			}
 
-			promFactory.addRuleOfFiveViolations(compound);
-			Map<String, PromiscuityCount<?>> countMap = compound.getCounts();
-			promFactory.addAllAssayCount(keyId, overall.getCompoundToAIDsMap(), params.getDatabase(), countMap);
+		promFactory.addRuleOfFiveViolations(compound);
+		Map<String, PromiscuityCount<?>> countMap = compound.getCounts();
+		promFactory.addAllAssayCount(keyId, overall.getCompoundToAIDsMap(), params.getDatabase(), countMap);
 
-			if (!params.getSimpleMode() || params.getPerProteinMode()) {
 
-				promFactory.addAllProteinCount(overall, countMap);
-				promFactory.addAllNoProteinAIDCount(countMap, overall);
+			promFactory.addAllProteinCount(overall, countMap);
+			promFactory.addAllNoProteinAIDCount(countMap, overall);
 
-				if (!params.getSimpleMode())
+			if (!params.getPerProteinMode()) {
+				promFactory.addProjectCountsPerCompound(overall, countMap);
+				promFactory.addAdvancedCounts(overall, countMap);
+			} else {
+				Map<Protein, Map<String, PromiscuityCount<?>>> perProteinCountMap = promFactory.allAssayCountPerProtein(countMap,
+						overall.getProteinAIDMap());
+
+				Map<String, PromiscuityCount<?>> noProteinCountMap = new HashMap<String, PromiscuityCount<?>>();
+				PromiscuityCount<Long> allAssayNoProteinCount = (PromiscuityCount<Long>) countMap
+						.get(PCPromiscuityFactory.noProteinsName);
+				noProteinCountMap.put(PCPromiscuityFactory.allAssayName, allAssayNoProteinCount);
+				noProteinCountMap.put(PCPromiscuityFactory.noProteinsName, allAssayNoProteinCount);
+
+				if (!params.getSimpleMode()) {
 					promFactory.addProjectCountsPerCompound(overall, countMap);
-
-				if (!params.getPerProteinMode()) {
-					promFactory.addAdvancedCounts(overall, countMap);
-				} else {
-					Map<Protein, Map<String, PromiscuityCount<?>>> perProteinCountMap = promFactory.allAssayCountPerProtein(countMap,
-							overall.getProteinAIDMap());
-
-					Map<String, PromiscuityCount<?>> noProteinCountMap = new HashMap<String, PromiscuityCount<?>>();
-					PromiscuityCount<Long> allAssayNoProteinCount = (PromiscuityCount<Long>) countMap
-							.get(PCPromiscuityFactory.noProteinsName);
-					noProteinCountMap.put(PCPromiscuityFactory.allAssayName, allAssayNoProteinCount);
-					noProteinCountMap.put(PCPromiscuityFactory.noProteinsName, allAssayNoProteinCount);
-
-					if (!params.getSimpleMode()) {
-						for (Protein keyProtein : perProteinCountMap.keySet()) {
-							Map<String, PromiscuityCount<?>> countMapPerProtein = perProteinCountMap.get(keyProtein);
-							promFactory.addAdvancedCountsPerProtein(overall, countMapPerProtein, countMap);
-							promFactory.addAllNoProteinAIDCount(countMapPerProtein, overall);
-							perProteinCountMap.put(keyProtein, countMapPerProtein);
-						}
-						promFactory.addAdvancedCountsPerProtein(overall, noProteinCountMap, countMap);
-						promFactory.addAllNoProteinAIDCount(noProteinCountMap, overall);
+					for (Protein keyProtein : perProteinCountMap.keySet()) {
+						Map<String, PromiscuityCount<?>> countMapPerProtein = perProteinCountMap.get(keyProtein);
+						promFactory.addAdvancedCountsPerProtein(overall, countMapPerProtein, countMap);
+						promFactory.addAllNoProteinAIDCount(countMapPerProtein, overall);
+						perProteinCountMap.put(keyProtein, countMapPerProtein);
 					}
-					compound.setPerProteinCounts(perProteinCountMap);
-					compound.setNoProteinCounts(noProteinCountMap);
+					promFactory.addAdvancedCountsPerProtein(overall, noProteinCountMap, countMap);
+					promFactory.addAllNoProteinAIDCount(noProteinCountMap, overall);
 				}
+				compound.setPerProteinCounts(perProteinCountMap);
+				compound.setNoProteinCounts(noProteinCountMap);
 			}
 
 			compound.setCounts(countMap);
@@ -138,57 +136,28 @@ public class PCPromiscuityMain {
 
 		OverallListsAndMapsFactory overallFactory = new OverallListsAndMapsFactory();
 
-		if (params.getPerProteinMode() || !params.getSimpleMode()) {
-			overall.setAllAIDs(session.getAllIds(db + "_pcassay"));
-			log.info("Number of All AIDs: " + overall.getAllAIDs().size());
 
-			String shortDB = db.substring(2, db.length());
-			List<Long> proteinAssays = overallFactory.aidListEsearch(params.getIds(), "pcassay_protein_target[Filter]", shortDB);
-			overall.setAllProteinAIDs(proteinAssays);
-			overall.setAidProteinMap(overallFactory.getAIDProteinMap(new ArrayList<Long>(proteinAssays)));
+		overall.setAllAIDs(session.getAllIds(db + "_pcassay"));
+		log.info("Number of All AIDs: " + overall.getAllAIDs().size());
 
-			List<Long> noProteinAIDs = (List<Long>) CollectionUtils.subtract(overall.getAllAIDs(), proteinAssays);
-			overall.setAllNoProteinAIDs(noProteinAIDs);
+		String shortDB = db.substring(2, db.length());
+		List<Long> proteinAssays = overallFactory.aidListEsearch(params.getIds(), "pcassay_protein_target[Filter]", shortDB);
+		overall.setAllProteinAIDs(proteinAssays);
+		overall.setAidProteinMap(overallFactory.getAIDProteinMap(new ArrayList<Long>(proteinAssays)));
 
-			log.info("Number of aids returned from eSummary request: " + overall.getAidProteinMap().keySet().size());
+		List<Long> noProteinAIDs = (List<Long>) CollectionUtils.subtract(overall.getAllAIDs(), proteinAssays);
+		overall.setAllNoProteinAIDs(noProteinAIDs);
 
-		}
+		log.info("Number of aids returned from eSummary request: " + overall.getAidProteinMap().keySet().size());
 
 		if (params.getPerProteinMode()) {
 			overall.setAllProteins(overallFactory.allProteinSet(overall.getAidProteinMap()));
 			overall.setProteinAIDMap(overallFactory.proteinAIDMap(overall.getAidProteinMap(), overall.getAllProteins()));
+			if (!params.getSimpleMode()) 
+				advancedCounts(overallFactory, overall, session, shortDB);
 		}
-
-		if (!params.getSimpleMode()) {
-			// all aids in each desired assay count category for advanced mode
-			Map<String, List<Long>> overallTotalAIDMap = new HashMap<String, List<Long>>(searchNames.length);
-			String shortDB = db.substring(2, db.length());
-			for (int ii = 0; ii < searchTerms.length; ii++) {
-				String searchTerm = searchTerms[ii];
-				log.info("Advanced search: " + searchTerm);
-				List<Long> list = overallFactory.aidListEsearch(params.getIds(), searchTerm, shortDB);
-				overallTotalAIDMap.put(searchNames[ii], list);
-			}
-			overall.setAdvancedCountTotalAIDMap(overallTotalAIDMap);
-
-			// eLink request for summary aids related to not ChEMBL aids
-			String linkNeighbor = "pcassay_pcassay_neighbor_list";
-
-			log.info("Number of ChEMBL AIDs: " + overall.getAdvancedCountTotalAIDMap().get(PCPromiscuityFactory.chemblName).size());
-
-			List<Long> notChEMBLAIDs = (List<Long>) CollectionUtils.subtract(overall.getAllAIDs(), overall.getAdvancedCountTotalAIDMap()
-					.get(PCPromiscuityFactory.chemblName));
-			session = ELinkWebSession.newInstance("pcassay", "pcassay", Arrays.asList(new String[] { linkNeighbor }), notChEMBLAIDs,
-					"summary[activityoutcomemethod]");
-
-			log.info("Number of ids in link request: " + String.valueOf(notChEMBLAIDs.size()));
-			session.run();
-			overall.setAllSummaries(session.getAllIds(linkNeighbor));
-			overall.setSummaryProteinMap(overallFactory.getAIDProteinMap(new ArrayList<Long>(overall.getAllSummaries())));
-			Map<Long, List<ELinkResult>> aidToSummaryMap = session.getELinkResultsAsMap();
-			overall.setSummaryToAIDsMap(overallFactory.getSummaryToAIDsMap(aidToSummaryMap));
-			overall.setMlpSummaries(overallFactory.aidtoAIDListEsearch(new ArrayList<Long>(overall.getAllSummaries()), searchTerms[0]));
-		}
+		else
+			advancedCounts(overallFactory, overall, session, shortDB);
 
 		if (db.equalsIgnoreCase("pcsubstance")) {
 			session = ELinkWebSession.newInstance(db, "pccompound", Arrays.asList(new String[] { "pcsubstance_pccompound_same" }),
@@ -199,6 +168,36 @@ public class PCPromiscuityMain {
 
 		log.info("Set up all overall lists");
 		return overall;
+	}
+	
+	private void advancedCounts(OverallListsAndMapsFactory overallFactory, OverallListsAndMaps overall, ELinkWebSession session, String shortDB) throws Exception{
+		// all aids in each desired assay count category
+		Map<String, List<Long>> overallTotalAIDMap = new HashMap<String, List<Long>>(searchNames.length);
+		for (int ii = 0; ii < searchTerms.length; ii++) {
+			String searchTerm = searchTerms[ii];
+			log.info("Advanced search: " + searchTerm);
+			List<Long> list = overallFactory.aidListEsearch(params.getIds(), searchTerm, shortDB);
+			overallTotalAIDMap.put(searchNames[ii], list);
+		}
+		overall.setAdvancedCountTotalAIDMap(overallTotalAIDMap);
+
+		// eLink request for summary aids related to not ChEMBL aids
+		String linkNeighbor = "pcassay_pcassay_neighbor_list";
+
+		log.info("Number of ChEMBL AIDs: " + overall.getAdvancedCountTotalAIDMap().get(PCPromiscuityFactory.chemblName).size());
+
+		List<Long> notChEMBLAIDs = (List<Long>) CollectionUtils.subtract(overall.getAllAIDs(), overall.getAdvancedCountTotalAIDMap()
+				.get(PCPromiscuityFactory.chemblName));
+		session = ELinkWebSession.newInstance("pcassay", "pcassay", Arrays.asList(new String[] { linkNeighbor }), notChEMBLAIDs,
+				"summary[activityoutcomemethod]");
+
+		log.info("Number of ids in link request: " + String.valueOf(notChEMBLAIDs.size()));
+		session.run();
+		overall.setAllSummaries(session.getAllIds(linkNeighbor));
+		overall.setSummaryProteinMap(overallFactory.getAIDProteinMap(new ArrayList<Long>(overall.getAllSummaries())));
+		Map<Long, List<ELinkResult>> aidToSummaryMap = session.getELinkResultsAsMap();
+		overall.setSummaryToAIDsMap(overallFactory.getSummaryToAIDsMap(aidToSummaryMap));
+		overall.setMlpSummaries(overallFactory.aidtoAIDListEsearch(new ArrayList<Long>(overall.getAllSummaries()), searchTerms[0]));
 	}
 
 }

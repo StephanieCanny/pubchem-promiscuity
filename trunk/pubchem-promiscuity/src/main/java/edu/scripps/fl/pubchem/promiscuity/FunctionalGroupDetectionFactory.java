@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,14 +31,13 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.io.DOMReader;
-import org.openscience.cdk.exception.CDKException;
-import org.openscience.cdk.interfaces.IMolecule;
-import org.openscience.cdk.isomorphism.UniversalIsomorphismTester;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import edu.scripps.fl.cdk.CDKFiles;
+import edu.scripps.fl.match.JoeLibMatcher;
+import edu.scripps.fl.match.SMARTSMatcher;
+import edu.scripps.fl.pubchem.promiscuity.model.CategorizedFunctionalGroups;
 import edu.scripps.fl.pubchem.promiscuity.model.CompoundPromiscuityInfo;
 import edu.scripps.fl.pubchem.promiscuity.model.FunctionalGroup;
 
@@ -49,37 +49,44 @@ public class FunctionalGroupDetectionFactory {
 
 	}
 
-	private boolean isSubStructure(String smiles1, String smiles2) throws CDKException, IOException {
-		IMolecule mol1 = CDKFiles.getMolecule(smiles1);
-		IMolecule mol2 = CDKFiles.getMolecule(smiles2);
-		return UniversalIsomorphismTester.isSubgraph(mol1, mol2);
-	}
-
-	public void calculateFunctionalGroups(Map<Long, CompoundPromiscuityInfo> compounds) throws CDKException, IOException,
+	public void calculateFunctionalGroups(Map<Long, CompoundPromiscuityInfo> compounds) throws IOException,
 			ParserConfigurationException, SAXException, URISyntaxException {
-		List<FunctionalGroup> groups = GetFunctionalGroups();
-
+		List<CategorizedFunctionalGroups> catGroups = GetFunctionalGroups();
+		
 		for (Long id : compounds.keySet()) {
 			CompoundPromiscuityInfo compound = compounds.get(id);
 			if (!compound.getOnHold()) {
-				List<FunctionalGroup> compoundGroups = new ArrayList<FunctionalGroup>();
-				String smiles = (String) compound.getDescriptors().get("CanonicalSmiles");
-				if (smiles != null) {
-					for (FunctionalGroup group : groups) {
-						if (isSubStructure(smiles, group.getSmiles()))
-							compoundGroups.add(group);
+				Map<String, CategorizedFunctionalGroups> categorizedCompoundGroupsMap = new HashMap<String, CategorizedFunctionalGroups>();
+				String smiles = (String) compound.getDescriptors().get(PCPromiscuityFactory.cSmiles);
+				log.info(id + "\t" + smiles);
+				if (smiles != null && !smiles.equals("")) {
+					SMARTSMatcher matcher = new JoeLibMatcher();
+					matcher.setTarget(smiles);
+					for (CategorizedFunctionalGroups catGroup : catGroups) {
+						CategorizedFunctionalGroups compoundCategGroups = new CategorizedFunctionalGroups();
+						List<FunctionalGroup> compoundGroups = new ArrayList<FunctionalGroup>();
+						for (FunctionalGroup group : catGroup.getFunctionalGroups()) {
+							if (matcher.matches(group.getSMARTS()))
+								compoundGroups.add(group);
+						}
+						compoundCategGroups.setFunctionalGroups(compoundGroups);
+						compoundCategGroups.setCategory(catGroup.getCategory());
+						categorizedCompoundGroupsMap.put(catGroup.getCategory(), compoundCategGroups);
 					}
-					compound.setFunctionalGroups(compoundGroups);
+					compound.setPossibleFalseAromaticityDetection(matcher.checkAromaticityDetection());
 				}
+				compound.setCategorizedFunctionalGroupsMap(categorizedCompoundGroupsMap);
 			}
+			
 			compounds.put(id, compound);
 		}
 	}
 
-	private List<FunctionalGroup> GetFunctionalGroups() throws ParserConfigurationException, SAXException, IOException, URISyntaxException {
-		List<FunctionalGroup> functionalGroups = new ArrayList<FunctionalGroup>();
+	protected List<CategorizedFunctionalGroups> GetFunctionalGroups() throws ParserConfigurationException, SAXException, IOException,
+			URISyntaxException {
+		List<CategorizedFunctionalGroups> categorizedGroups = new ArrayList<CategorizedFunctionalGroups>();
 
-		String fileName = System.getProperty("user.home") + "\\FunctionalGroups.xml";
+		String fileName = System.getProperty("user.home") + "\\FunctionalGroups_V2.xml";
 		File functionalGroupsXML = new File(fileName);
 		Document doc;
 		log.info("Looking for file: " + fileName);
@@ -96,15 +103,26 @@ public class FunctionalGroupDetectionFactory {
 			new XMLDocument().write(doc, functionalGroupsXML);
 			log.info("Copied FunctionalGroups.xml to: " + functionalGroupsXML.getAbsolutePath());
 		}
-		List<Element> functionalGroupsElems = doc.selectNodes("/functionalGroups/functionalGroup");
-		for (Element element : functionalGroupsElems) {
-			FunctionalGroup fGroup = new FunctionalGroup();
-			fGroup.setName(element.selectSingleNode("name").getText());
-			fGroup.setSmiles(element.selectSingleNode("smiles").getText());
-			functionalGroups.add(fGroup);
+		log.info(doc.getRootElement().getName());
+		List<Element> categoryElems = doc.selectNodes("/Categories/Category");
+		log.info("Number of categories: " + categoryElems.size());
+		for (Element category : categoryElems) {
+			CategorizedFunctionalGroups catFGroups = new CategorizedFunctionalGroups();
+			List<FunctionalGroup> functionalGroups = new ArrayList<FunctionalGroup>();
+			List<Element> fgElems = category.selectNodes("FunctionalGroup");
+			log.info("Number of functional groups in category " + category.attributeValue("name") + ": " + fgElems.size());
+			for (Element fgElem : fgElems) {
+				FunctionalGroup fGroup = new FunctionalGroup();
+				fGroup.setName(fgElem.selectSingleNode("Name").getText());
+				fGroup.setSMARTS(fgElem.selectSingleNode("SMARTS").getText());
+				functionalGroups.add(fGroup);
+			}
+			catFGroups.setCategory(category.attributeValue("name"));
+			catFGroups.setFunctionalGroups(functionalGroups);
+			categorizedGroups.add(catFGroups);
 		}
 
-		return functionalGroups;
+		return categorizedGroups;
 	}
 
 }

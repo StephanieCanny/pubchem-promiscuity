@@ -17,6 +17,40 @@ function getUrlParams(){
     return vars;
 }
 
+function getParams(url){
+    var vars = [], hash;
+    var hashes = url.slice(url.indexOf('?') + 1).split('&');
+    for(var i = 0; i < hashes.length; i++)
+    {
+        hash = hashes[i].split('=');
+        vars.push(hash[0]);
+        vars[hash[0]] = hash[1];
+    }
+    return vars;
+}
+
+function getServiceUrl(url){
+    var urlSplit = url.split('?');
+    var serviceUrl = urlSplit[0];
+    return serviceUrl;
+}
+
+function getHiddenFields(params){
+    var fields = [];
+    for(var ii=0; ii < params.length; ii++){
+        var param = params[ii];
+        var value = params[param];
+        fields.push({value: value, name: param, title: param, type:"hidden"});
+   }
+   return fields
+}
+
+function inflate(compresed_value){
+    var b64decode = base64decode(compresed_value);
+    var inflated = RawDeflate.inflate(b64decode);
+    return inflated;
+}
+
 function getCookie(c_name){
 	var i,x,y,ARRcookies=document.cookie.split(";");
 	for (i=0;i<ARRcookies.length;i++){
@@ -53,3 +87,4 @@ function formatNumber(value){
 	return value;
 	
 }
+

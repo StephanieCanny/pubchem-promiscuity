@@ -26,8 +26,9 @@ public class CompoundPromiscuityInfo {
 	private Long CID;
 	private String database;
 	private Boolean onHold = false;
+	private boolean possibleFalseAromaticityDetection = false;
 	private Map<String, Object> descriptors = new HashMap<String, Object>();
-	private List<FunctionalGroup> functionalGroups = new ArrayList<FunctionalGroup>();
+	private Map<String, CategorizedFunctionalGroups> categorizedFunctionalGroupsMap = new HashMap<String, CategorizedFunctionalGroups>();
 	private Map<String, PromiscuityCount<?>> counts = new HashMap<String, PromiscuityCount<?>>();
 	private Map<Protein, Map<String, PromiscuityCount<?>>> perProteinCounts = new HashMap<Protein, Map<String, PromiscuityCount<?>>>();
 	private Map<String, PromiscuityCount<?>> noProteinCounts = new HashMap<String, PromiscuityCount<?>>();
@@ -42,10 +43,6 @@ public class CompoundPromiscuityInfo {
 
 	public Map<String, Object> getDescriptors() {
 		return descriptors;
-	}
-
-	public List<FunctionalGroup> getFunctionalGroups() {
-		return functionalGroups;
 	}
 
 	public Long getId() {
@@ -72,8 +69,12 @@ public class CompoundPromiscuityInfo {
 		this.descriptors = descriptors;
 	}
 
-	public void setFunctionalGroups(List<FunctionalGroup> functionalGroups) {
-		this.functionalGroups = functionalGroups;
+	public Map<String, CategorizedFunctionalGroups> getCategorizedFunctionalGroupsMap() {
+		return categorizedFunctionalGroupsMap;
+	}
+
+	public void setCategorizedFunctionalGroupsMap(Map<String, CategorizedFunctionalGroups> categorizedFunctionalGroupsMap) {
+		this.categorizedFunctionalGroupsMap = categorizedFunctionalGroupsMap;
 	}
 
 	public void setId(Long id) {
@@ -102,6 +103,14 @@ public class CompoundPromiscuityInfo {
 
 	public Long getCID() {
 		return CID;
+	}
+
+	public boolean isPossibleFalseAromaticityDetection() {
+		return possibleFalseAromaticityDetection;
+	}
+
+	public void setPossibleFalseAromaticityDetection(boolean possibleFalseAromaticityDetection) {
+		this.possibleFalseAromaticityDetection = possibleFalseAromaticityDetection;
 	}
 
 }
